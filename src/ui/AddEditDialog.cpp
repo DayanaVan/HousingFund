@@ -125,7 +125,6 @@ void AddEditDialog::onCancelClicked() {
 }
 
 void AddEditDialog::validateInput() {
-    // Можно добавить подсветку невалидных полей
     bool valid = !addressEdit->text().trimmed().isEmpty() &&
                  apartmentsSpin->value() > 0 &&
                  areaSpin->value() > 0 &&

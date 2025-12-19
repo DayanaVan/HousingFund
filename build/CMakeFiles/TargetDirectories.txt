@@ -1,0 +1,9 @@
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/HousingFund.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/edit_cache.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/rebuild_cache.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/list_install_components.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/install.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/install/local.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/install/strip.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/HousingFund_autogen_timestamp_deps.dir
+/home/vanzarakshaeva/HousingFund/build/CMakeFiles/HousingFund_autogen.dir

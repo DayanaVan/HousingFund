@@ -48,7 +48,15 @@ sudo systemctl enable postgresql
 # 4. Установка Qt6
 print_info "Установка Qt6..."
 sudo apt install -y qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
-    libqt6core6 libqt6widgets6 libqt6gui6 qttools6-dev
+    libqt6core6t64 libqt6widgets6t64 libqt6gui6t64
+
+# Проверка наличия qttools6-dev или альтернативы
+if apt-cache show qttools6-dev > /dev/null 2>&1; then
+    sudo apt install -y qttools6-dev
+else
+    print_warn "qttools6-dev не найден, пробую qttools6-dev-tools..."
+    sudo apt install -y qttools6-dev-tools
+fi
 
 # 5. Установка libpqxx
 print_info "Установка libpqxx (C++ библиотека для PostgreSQL)..."

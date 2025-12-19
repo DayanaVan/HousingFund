@@ -4,15 +4,14 @@
 #include <QDialog>
 #include <QCheckBox>
 #include <QButtonGroup>
-#include <QLineEdit>      // ДОБАВЛЕНО
-#include <QPushButton>    // ДОБАВЛЕНО
-#include <QGroupBox>      // ДОБАВЛЕНО
-#include <QRadioButton>   // ДОБАВЛЕНО
-#include <QLabel>         // ДОБАВЛЕНО
-#include <QGridLayout>    // ДОБАВЛЕНО
+#include <QLineEdit>      
+#include <QPushButton>    
+#include <QGroupBox>      
+#include <QRadioButton>   
+#include <QLabel>         
+#include <QGridLayout>    
 
 QT_BEGIN_NAMESPACE
-// Удаляем forward declarations, так как теперь include заголовочных файлов
 QT_END_NAMESPACE
 
 class ExportDialog : public QDialog {

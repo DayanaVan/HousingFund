@@ -1,5 +1,4 @@
 -- База данных жилого фонда для Linux/C++/PostgreSQL
--- Версия 2.1
 
 -- Таблица пользователей
 CREATE TABLE IF NOT EXISTS users (

@@ -10,6 +10,8 @@
 #include <QCheckBox>
 #include <QDebug>
 
+using namespace std;
+
 AuthDialog::AuthDialog(DatabaseManager* dbManager, QWidget* parent)
     : QDialog(parent)
     , ui(new Ui::AuthDialog)
@@ -23,8 +25,7 @@ AuthDialog::AuthDialog(DatabaseManager* dbManager, QWidget* parent)
     setModal(true);
     
     setFixedSize(350, 200);
-    
-    // Добавляем кнопку "Регистрация" в существующий layout
+
     QPushButton* registerButton = new QPushButton("Регистрация", this);
     ui->horizontalLayout->addWidget(registerButton);
     
@@ -33,7 +34,6 @@ AuthDialog::AuthDialog(DatabaseManager* dbManager, QWidget* parent)
     connect(ui->btnCancel, &QPushButton::clicked, this, &AuthDialog::onCancelClicked);
     connect(registerButton, &QPushButton::clicked, this, &AuthDialog::onRegisterClicked);
     
-    // Enter для быстрого входа
     connect(ui->txtLogin, &QLineEdit::returnPressed, this, &AuthDialog::onLoginClicked);
     connect(ui->txtPassword, &QLineEdit::returnPressed, this, &AuthDialog::onLoginClicked);
 }
@@ -62,9 +62,9 @@ void AuthDialog::onLoginClicked() {
         return;
     }
     
-    // Получаем значения из полей (виджеты уже созданы в .ui файле)
-    std::string login = ui->txtLogin->text().trimmed().toStdString();
-    std::string password = ui->txtPassword->text().toStdString();
+    // Получаем значения из полей 
+    string login = ui->txtLogin->text().trimmed().toStdString();
+    string password = ui->txtPassword->text().toStdString();
     
     qDebug() << "Попытка входа для пользователя:" << login.c_str();
     
@@ -76,7 +76,7 @@ void AuthDialog::onLoginClicked() {
     }
     
     // Проверяем пароль
-    std::string passwordHash = HashUtils::hashPassword(password, user.salt);
+    string passwordHash = HashUtils::hashPassword(password, user.salt);
     if (passwordHash != user.passwordHash) {
         QMessageBox::warning(this, "Ошибка", "Неверный пароль");
         return;
@@ -109,7 +109,6 @@ void AuthDialog::onRegisterClicked() {
     
     registerDialog.setFixedSize(450, 350);
     
-    // Создаем layout
     QVBoxLayout* layout = new QVBoxLayout(&registerDialog);
     
     // Создаем виджеты
@@ -127,7 +126,6 @@ void AuthDialog::onRegisterClicked() {
     confirmEdit->setEchoMode(QLineEdit::Password);
     confirmEdit->setPlaceholderText("Повторите пароль");
     
-    // Добавим виджет для отображения требований к паролю
     QLabel* passwordRequirements = new QLabel(
         "Требования к паролю:\n"
         "1. Минимум 8 символов\n"
@@ -156,7 +154,6 @@ void AuthDialog::onRegisterClicked() {
     buttonLayout->addWidget(okButton);
     buttonLayout->addWidget(cancelButton);
     
-    // Добавляем виджеты в layout
     layout->addWidget(loginLabel);
     layout->addWidget(loginEdit);
     layout->addWidget(passwordLabel);
@@ -166,19 +163,17 @@ void AuthDialog::onRegisterClicked() {
     layout->addWidget(confirmEdit);
     layout->addLayout(buttonLayout);
     
-    // Добавим растягивающийся элемент для лучшего управления размером
     layout->addStretch();
     
-    // Подключаем кнопку "Создать"
     connect(okButton, &QPushButton::clicked, &registerDialog, 
         [&registerDialog, loginEdit, passwordEdit, confirmEdit, passwordRequirements, this]() {
         
         qDebug() << "Нажата кнопка 'Создать' в диалоге регистрации";
         
         // Получаем данные из полей
-        std::string login = loginEdit->text().trimmed().toStdString();
-        std::string password = passwordEdit->text().toStdString();
-        std::string confirm = confirmEdit->text().toStdString();
+        string login = loginEdit->text().trimmed().toStdString();
+        string password = passwordEdit->text().toStdString();
+        string confirm = confirmEdit->text().toStdString();
         
         qDebug() << "Регистрация. Логин:" << login.c_str();
         
@@ -225,8 +220,8 @@ void AuthDialog::onRegisterClicked() {
         }
         
         // 6. Создание пользователя
-        std::string salt = HashUtils::generateSalt();
-        std::string passwordHash = HashUtils::hashPassword(password, salt);
+        string salt = HashUtils::generateSalt();
+        string passwordHash = HashUtils::hashPassword(password, salt);
         
         User newUser;
         newUser.login = login;
@@ -312,12 +307,12 @@ connect(passwordEdit, &QLineEdit::textChanged, passwordRequirements,
             }
         }
         
-        QString details = "✓ Пароль соответствует всем требованиям безопасности!\n";
-        details += QString("1. Длина: %1 символов ✓\n").arg(password.length());
-        details += QString("2. Заглавная буква: %1 ✓\n").arg(hasUpper ? "есть" : "нет");
-        details += QString("3. Строчная буква: %1 ✓\n").arg(hasLower ? "есть" : "нет");
-        details += QString("4. Цифра: %1 ✓\n").arg(hasDigit ? "есть" : "нет");
-        details += QString("5. Специальный символ: %1 ✓").arg(hasSpecial ? "есть" : "нет");
+        QString details = "Пароль соответствует всем требованиям безопасности\n";
+        details += QString("1. Длина: %1 символов\n").arg(password.length());
+        details += QString("2. Заглавная буква: %1\n").arg(hasUpper ? "есть" : "нет");
+        details += QString("3. Строчная буква: %1\n").arg(hasLower ? "есть" : "нет");
+        details += QString("4. Цифра: %1\n").arg(hasDigit ? "есть" : "нет");
+        details += QString("5. Специальный символ: %1").arg(hasSpecial ? "есть" : "нет");
         
         passwordRequirements->setText(details);
         passwordRequirements->setStyleSheet("QLabel { "
@@ -331,7 +326,6 @@ connect(passwordEdit, &QLineEdit::textChanged, passwordRequirements,
             "margin-bottom: 10px;"
         "}");
     } else {
-        // Проверяем каждое требование отдельно
         bool hasUpper = false;
         bool hasLower = false;
         bool hasDigit = false;
@@ -340,48 +334,42 @@ connect(passwordEdit, &QLineEdit::textChanged, passwordRequirements,
         for (QChar c : password) {
             ushort unicode = c.unicode();
             
-            // Русские заглавные
             if ((unicode >= 0x0410 && unicode <= 0x042F) || unicode == 0x0401) {
                 hasUpper = true;
             }
-            // Русские строчные
             else if ((unicode >= 0x0430 && unicode <= 0x044F) || unicode == 0x0451) {
                 hasLower = true;
             }
-            // Латинские заглавные
             else if (c.isUpper()) {
                 hasUpper = true;
             }
-            // Латинские строчные
             else if (c.isLower()) {
                 hasLower = true;
             }
-            // Цифры
             else if (c.isDigit()) {
                 hasDigit = true;
             }
-            // Специальные символы
             else if (!c.isSpace() && c.category() != QChar::Other_Control) {
                 hasSpecial = true;
             }
         }
         
-        QString requirementsText = "⚠️ Пароль не соответствует требованиям:\n";
+        QString requirementsText = "Пароль не соответствует требованиям:\n";
         
         requirementsText += QString("1. Минимум 8 символов: %1\n")
-            .arg(password.length() >= 8 ? "✓" : QString("✗ (%1/8)").arg(password.length()));
+            .arg(password.length() >= 8 ? "есть" : QString("нет (%1/8)").arg(password.length()));
         
         requirementsText += QString("2. Заглавная буква: %1\n")
-            .arg(hasUpper ? "✓" : "✗");
+            .arg(hasUpper ? "есть" : "нет");
         
         requirementsText += QString("3. Строчная буква: %1\n")
-            .arg(hasLower ? "✓" : "✗");
+            .arg(hasLower ? "есть" : "нет");
         
         requirementsText += QString("4. Цифра: %1\n")
-            .arg(hasDigit ? "✓" : "✗");
+            .arg(hasDigit ? "есть" : "нет");
         
         requirementsText += QString("5. Специальный символ: %1")
-            .arg(hasSpecial ? "✓" : "✗");
+            .arg(hasSpecial ? "есть" : "нет");
         
         passwordRequirements->setText(requirementsText);
         passwordRequirements->setStyleSheet("QLabel { "
@@ -418,7 +406,7 @@ bool AuthDialog::validateInput() {
     return true;
 }
 
-std::string AuthDialog::getCurrentUserLogin() const {
+string AuthDialog::getCurrentUserLogin() const {
     return currentUserLogin;
 }
 

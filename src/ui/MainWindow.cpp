@@ -1,29 +1,24 @@
 #include "MainWindow.h"
-#include <QIcon>
-#include <QAction>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
-#include <QDialog>
-#include <QFormLayout>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
-#include <QComboBox>
-#include <QDialogButtonBox>
-#include <QTabWidget>
 #include "./ui_MainWindow.h"
 #include "../models/House.h"
 #include "AddEditDialog.h"
 #include "ExportDialog.h"
-#include "AuthDialog.h"
-#include <QMessageBox>
-#include <QFileDialog>
+
+#include <QAction>
+#include <QComboBox>
+#include <QFormLayout>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QDialogButtonBox>
+#include <QTabWidget>
 #include <QStatusBar>
 #include <QHeaderView>
-#include <QDebug>
+#include <QMessageBox>
 #include <QDateTime>
 #include <algorithm>
-#include <QInputDialog>
 #include <QSet>
+
+using namespace std;
 
 using namespace std;
 
@@ -48,7 +43,6 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::setupUI() {
-    // Создаем центральный виджет
     QWidget* centralWidget = new QWidget(this);
     QVBoxLayout* mainLayout = new QVBoxLayout(centralWidget);
     
@@ -131,7 +125,6 @@ void MainWindow::setupUI() {
     table->setSelectionMode(QAbstractItemView::ExtendedSelection);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     
-    // Собираем layout
     mainLayout->addWidget(sortPanel);
     mainLayout->addWidget(searchPanel);
     mainLayout->addWidget(table);
@@ -139,10 +132,8 @@ void MainWindow::setupUI() {
     centralWidget->setLayout(mainLayout);
     setCentralWidget(centralWidget);
     
-    // Статус бар
     statusBar()->showMessage("Готово");
     
-    // Подключаем сигналы
     connect(searchBtn, &QPushButton::clicked, this, [this, searchEdit]() {
         currentFilters.addressFilter = searchEdit->text();
         loadHouses();
@@ -320,10 +311,8 @@ bool MainWindow::compareHouses(const House& a, const House& b) const {
         }
     }
     
-    return false; // Все поля равны
+    return false; 
 }
-
-// === ОСНОВНЫЕ СЛОТЫ ===
 
 void MainWindow::onAddHouse() {
     AddEditDialog dialog(this);
@@ -351,7 +340,6 @@ void MainWindow::onEditHouse() {
     
     int houseId = table->item(table->currentRow(), 0)->data(Qt::UserRole).toInt();
     
-    // Получаем все дома и находим нужный
     auto houses = dbManager->getAllHouses();
     House* selectedHouse = nullptr;
     
@@ -804,8 +792,7 @@ void MainWindow::onExport() {
         QStringList fields = dialog.getSelectedFields();
         QString delimiter = dialog.getDelimiter();
         bool includeHeader = dialog.includeHeader();
-        
-        // Конвертируем QStringList в vector<string>
+
         vector<string> stdFields;
         for (const QString& field : fields) {
             stdFields.push_back(field.toStdString());
@@ -856,29 +843,10 @@ void MainWindow::showInfo(const QString& message) {
     QMessageBox::information(this, "Информация", message);
 }
 
-void MainWindow::onSearch()
-{
-    // Реализовано в setupUI
-}
-
-void MainWindow::onAbout()
-{
-    QMessageBox::about(this, "О программе", 
-        "Housing Fund Management System\n"
-        "Версия 2.1\n\n"
-        "Новые возможности:\n"
-        "• Расширенные фильтры по всем параметрам\n"
-        "• Многоуровневая сортировка\n"
-        "• Улучшенное удаление с выбором критериев\n"
-        "• Проверка на дубликаты домов\n"
-        "• Расширенный экспорт данных");
-}
-
 void MainWindow::onHouseSelected(int row, int column) {
     QTableWidget* table = findChild<QTableWidget*>();
     if (!table || row < 0) return;
     
-    // Получаем ID дома
     QTableWidgetItem* item = table->item(row, 0);
     if (!item) return;
     
@@ -888,7 +856,6 @@ void MainWindow::onHouseSelected(int row, int column) {
     auto houses = dbManager->getAllHouses();
     for (const auto& house : houses) {
         if (house.id == houseId) {
-            // Выводим информацию в статус бар
             QString info = QString("Выбран дом: %1 | Квартир: %2 | Площадь: %3 м² | Год: %4 | Этажей: %5")
                 .arg(QString::fromStdString(house.address))
                 .arg(house.apartments)

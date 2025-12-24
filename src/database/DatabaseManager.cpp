@@ -23,7 +23,7 @@ bool DatabaseManager::connect() {
         conn = new pqxx::connection(connectionString);
         return conn->is_open();
     } catch (const exception& e) {
-        cerr << "Connection failed: " << e.what() << endl;
+        cerr << "Ошибка подключения к БД: " << e.what() << endl;
         return false;
     }
 }
@@ -32,7 +32,6 @@ void DatabaseManager::disconnect() {
     if (conn) {
         delete conn;
         conn = nullptr;
-        cout << "Database connection closed." << endl;
     }
 }
 
@@ -40,21 +39,30 @@ bool DatabaseManager::isConnected() const {
     return conn && conn->is_open();
 }
 
-// === ДОМА ===
-
+// ДОМА 
 bool DatabaseManager::addHouse(const House& house) {
     if (!isConnected() || !house.isValid()) return false;
     
     try {
         pqxx::work txn(*conn);
-        string sql = "INSERT INTO houses (address, apartments, total_area, build_year, floors) "
-                     "VALUES ($1, $2, $3, $4, $5)";
-        txn.exec_params(sql, house.address, house.apartments, house.totalArea, 
-                       house.buildYear, house.floors);
+        pqxx::result res = txn.exec_params(
+            "SELECT add_house($1, $2, $3, $4, $5)",
+            house.address, 
+            house.apartments, 
+            house.totalArea, 
+            house.buildYear, 
+            house.floors
+        );
+        
         txn.commit();
-        return true;
+        
+        if (!res.empty()) {
+            int result = res[0][0].as<int>();
+            return result > 0;
+        }
+        return false;
     } catch (const exception& e) {
-        cerr << "Add house error: " << e.what() << endl;
+        cerr << "Ошибка добавления дома: " << e.what() << endl;
         return false;
     }
 }
@@ -64,15 +72,38 @@ bool DatabaseManager::updateHouse(const House& house) {
     
     try {
         pqxx::work txn(*conn);
-        string sql = "UPDATE houses SET address = $1, apartments = $2, "
-                     "total_area = $3, build_year = $4, floors = $5 "
-                     "WHERE id = $6";
-        txn.exec_params(sql, house.address, house.apartments, house.totalArea, 
-                       house.buildYear, house.floors, house.id);
+        pqxx::result res = txn.exec_params(
+            "SELECT update_house($1, $2, $3, $4, $5, $6)",
+            house.id,
+            house.address, 
+            house.apartments, 
+            house.totalArea, 
+            house.buildYear, 
+            house.floors
+        );
+        
         txn.commit();
-        return true;
+        return !res.empty() && res[0][0].as<bool>();
     } catch (const exception& e) {
-        cerr << "Update house error: " << e.what() << endl;
+        cerr << "Ошибка обновления дома: " << e.what() << endl;
+        return false;
+    }
+}
+
+bool DatabaseManager::deleteHouse(int id) {
+    if (!isConnected() || id <= 0) return false;
+    
+    try {
+        pqxx::work txn(*conn);
+        pqxx::result res = txn.exec_params(
+            "SELECT delete_house($1)",
+            id
+        );
+        
+        txn.commit();
+        return !res.empty() && res[0][0].as<bool>();
+    } catch (const exception& e) {
+        cerr << "Ошибка удаления дома: " << e.what() << endl;
         return false;
     }
 }
@@ -83,15 +114,13 @@ vector<House> DatabaseManager::getAllHouses() {
     
     try {
         pqxx::nontransaction ntx(*conn);
-        string sql = "SELECT id, address, apartments, total_area, build_year, floors, "
-                     "EXTRACT(EPOCH FROM created_at) FROM houses ORDER BY id";
-        pqxx::result res = ntx.exec(sql);
+        pqxx::result res = ntx.exec("SELECT * FROM get_all_houses()");
         
         for (const auto& row : res) {
-            houses.push_back(rowToHouse(row));
+            houses.push_back(rowToHouseFromProcedure(row));
         }
     } catch (const exception& e) {
-        cerr << "Get houses error: " << e.what() << endl;
+        cerr << "Ошибка получения списка домов: " << e.what() << endl;
     }
     return houses;
 }
@@ -101,12 +130,15 @@ bool DatabaseManager::deleteHousesByYear(int year) {
     
     try {
         pqxx::work txn(*conn);
-        string sql = "DELETE FROM houses WHERE build_year = $1";
-        txn.exec_params(sql, year);
+        pqxx::result res = txn.exec_params(
+            "SELECT delete_houses_by_year($1)",
+            year
+        );
+        
         txn.commit();
-        return true;
+        return !res.empty() && res[0][0].as<bool>();
     } catch (const exception& e) {
-        cerr << "Delete by year error: " << e.what() << endl;
+        cerr << "Ошибка удаления домов по году: " << e.what() << endl;
         return false;
     }
 }
@@ -116,12 +148,15 @@ bool DatabaseManager::deleteHousesByApartments(int minApartments, int maxApartme
     
     try {
         pqxx::work txn(*conn);
-        string sql = "DELETE FROM houses WHERE apartments >= $1 AND apartments <= $2";
-        txn.exec_params(sql, minApartments, maxApartments);
+        pqxx::result res = txn.exec_params(
+            "SELECT delete_houses_by_apartments($1, $2)",
+            minApartments, maxApartments
+        );
+        
         txn.commit();
-        return true;
+        return !res.empty() && res[0][0].as<bool>();
     } catch (const exception& e) {
-        cerr << "Delete by apartments error: " << e.what() << endl;
+        cerr << "Ошибка удаления домов по квартирам: " << e.what() << endl;
         return false;
     }
 }
@@ -131,12 +166,15 @@ bool DatabaseManager::deleteHousesByArea(double minArea, double maxArea) {
     
     try {
         pqxx::work txn(*conn);
-        string sql = "DELETE FROM houses WHERE total_area >= $1 AND total_area <= $2";
-        txn.exec_params(sql, minArea, maxArea);
+        pqxx::result res = txn.exec_params(
+            "SELECT delete_houses_by_area($1, $2)",
+            minArea, maxArea
+        );
+        
         txn.commit();
-        return true;
+        return !res.empty() && res[0][0].as<bool>();
     } catch (const exception& e) {
-        cerr << "Delete by area error: " << e.what() << endl;
+        cerr << "Ошибка удаления домов по площади: " << e.what() << endl;
         return false;
     }
 }
@@ -146,13 +184,15 @@ bool DatabaseManager::deleteHousesByAddress(const string& addressPattern) {
     
     try {
         pqxx::work txn(*conn);
-        string sql = "DELETE FROM houses WHERE address ILIKE $1";
-        string likePattern = "%" + addressPattern + "%";
-        txn.exec_params(sql, likePattern);
+        pqxx::result res = txn.exec_params(
+            "SELECT delete_houses_by_address($1)",
+            addressPattern
+        );
+        
         txn.commit();
-        return true;
+        return !res.empty() && res[0][0].as<bool>();
     } catch (const exception& e) {
-        cerr << "Delete by address error: " << e.what() << endl;
+        cerr << "Ошибка удаления домов по адресу: " << e.what() << endl;
         return false;
     }
 }
@@ -163,54 +203,81 @@ vector<House> DatabaseManager::getHousesOlderThan(int years) {
     
     try {
         pqxx::nontransaction ntx(*conn);
-        string sql = "SELECT id, address, apartments, total_area, build_year, floors, "
-                     "EXTRACT(EPOCH FROM created_at) "
-                     "FROM houses WHERE build_year < EXTRACT(YEAR FROM CURRENT_DATE) - $1 "
-                     "ORDER BY build_year";
-        pqxx::result res = ntx.exec_params(sql, years);
+        pqxx::result res = ntx.exec_params(
+            "SELECT * FROM get_houses_older_than($1)",
+            years
+        );
         
         for (const auto& row : res) {
-            houses.push_back(rowToHouse(row));
+            House house;
+            house.id = row["house_id"].as<int>();
+            house.address = row["house_address"].as<string>();
+            house.apartments = row["house_apartments"].as<int>();
+            house.totalArea = row["house_total_area"].as<double>();
+            house.buildYear = row["house_build_year"].as<int>();
+            house.floors = row["house_floors"].as<int>();
+            houses.push_back(house);
         }
     } catch (const exception& e) {
-        cerr << "Get old houses error: " << e.what() << endl;
+        cerr << "Ошибка получения старых домов: " << e.what() << endl;
     }
     return houses;
 }
 
-// === ПРОВЕРКА ДУБЛИКАТОВ ===
+vector<House> DatabaseManager::getHousesByYear(int year) {
+    vector<House> houses;
+    if (!isConnected()) return houses;
+    
+    try {
+        pqxx::nontransaction ntx(*conn);
+        pqxx::result res = ntx.exec_params(
+            "SELECT * FROM get_houses_by_year($1)",
+            year
+        );
+        
+        for (const auto& row : res) {
+            houses.push_back(rowToHouseFromProcedure(row));
+        }
+    } catch (const exception& e) {
+        cerr << "Ошибка получения домов по году: " << e.what() << endl;
+    }
+    return houses;
+}
 
+vector<House> DatabaseManager::searchHouses(const string& query) {
+    vector<House> houses;
+    if (!isConnected() || query.empty()) return houses;
+    
+    try {
+        pqxx::nontransaction ntx(*conn);
+        pqxx::result res = ntx.exec_params(
+            "SELECT * FROM search_houses($1)",
+            query
+        );
+        
+        for (const auto& row : res) {
+            houses.push_back(rowToHouseFromProcedure(row));
+        }
+    } catch (const exception& e) {
+        cerr << "Ошибка поиска домов: " << e.what() << endl;
+    }
+    return houses;
+}
+
+// ПРОВЕРКА ДУБЛИКАТОВ 
 bool DatabaseManager::houseExists(const House& house) {
     if (!isConnected() || house.address.empty()) return false;
     
     try {
         pqxx::nontransaction ntx(*conn);
+        pqxx::result res = ntx.exec_params(
+            "SELECT house_exists($1)",
+            house.address
+        );
         
-        // Проверяем точное совпадение
-        string sql = "SELECT COUNT(*) FROM houses WHERE address = $1";
-        pqxx::result res = ntx.exec_params(sql, house.address);
-        
-        if (!res.empty() && res[0][0].as<int>() > 0) {
-            return true;
-        }
-        
-        // Проверяем нормализованный адрес
-        string normalizedAddress = normalizeAddress(house.address);
-        sql = "SELECT address FROM houses";
-        pqxx::result allHouses = ntx.exec(sql);
-        
-        for (const auto& row : allHouses) {
-            string dbAddress = row[0].as<string>();
-            string normalizedDbAddress = normalizeAddress(dbAddress);
-            
-            if (normalizedAddress == normalizedDbAddress) {
-                return true;
-            }
-        }
-        
-        return false;
+        return !res.empty() && res[0][0].as<bool>();
     } catch (const exception& e) {
-        cerr << "Check house exists error: " << e.what() << endl;
+        cerr << "Ошибка проверки существования дома: " << e.what() << endl;
         return false;
     }
 }
@@ -220,12 +287,15 @@ bool DatabaseManager::houseExistsWithDifferentId(const House& house) {
     
     try {
         pqxx::nontransaction ntx(*conn);
-        string sql = "SELECT COUNT(*) FROM houses WHERE address = $1 AND id != $2";
-        pqxx::result res = ntx.exec_params(sql, house.address, house.id);
+        pqxx::result res = ntx.exec_params(
+            "SELECT house_exists_except_id($1, $2)",
+            house.address,
+            house.id
+        );
         
-        return !res.empty() && res[0][0].as<int>() > 0;
+        return !res.empty() && res[0][0].as<bool>();
     } catch (const exception& e) {
-        cerr << "Check house exists with different ID error: " << e.what() << endl;
+        cerr << "Ошибка проверки дома с другим ID: " << e.what() << endl;
         return false;
     }
 }
@@ -236,69 +306,75 @@ bool DatabaseManager::findSimilarHouses(const House& house, vector<House>& simil
     
     try {
         pqxx::nontransaction ntx(*conn);
-        
-        // Получаем все дома
-        string sql = "SELECT id, address, apartments, total_area, build_year, floors, "
-                     "EXTRACT(EPOCH FROM created_at) FROM houses";
-        pqxx::result res = ntx.exec(sql);
+        pqxx::result res = ntx.exec_params(
+            "SELECT * FROM find_similar_houses($1, $2)",
+            house.id,
+            similarityThreshold
+        );
         
         for (const auto& row : res) {
-            House existingHouse = rowToHouse(row);
-            
-            // Пропускаем тот же самый дом при редактировании
-            if (house.id > 0 && existingHouse.id == house.id) {
-                continue;
-            }
-            
-            double similarity = 0.0;
-            
-            // Проверка адреса (основной критерий)
-            if (existingHouse.address == house.address) {
-                similarity += 0.5;
-            } else if (existingHouse.address.find(house.address) != string::npos ||
-                      house.address.find(existingHouse.address) != string::npos) {
-                similarity += 0.3;
-            }
-            
-            // Проверка года постройки (±5 лет)
-            if (abs(existingHouse.buildYear - house.buildYear) <= 5) {
-                similarity += 0.1;
-            }
-            
-            // Проверка количества квартир (±20%)
-            int aptDiff = abs(existingHouse.apartments - house.apartments);
-            double aptRatio = static_cast<double>(aptDiff) / max(existingHouse.apartments, house.apartments);
-            if (aptRatio <= 0.2) {
-                similarity += 0.1;
-            }
-            
-            // Проверка площади (±15%)
-            double areaDiff = fabs(existingHouse.totalArea - house.totalArea);
-            double areaRatio = areaDiff / max(existingHouse.totalArea, house.totalArea);
-            if (areaRatio <= 0.15) {
-                similarity += 0.1;
-            }
-            
-            // Проверка этажности
-            if (existingHouse.floors == house.floors) {
-                similarity += 0.1;
-            } else if (abs(existingHouse.floors - house.floors) <= 1) {
-                similarity += 0.05;
-            }
-            
-            if (similarity >= similarityThreshold) {
-                similarHouses.push_back(existingHouse);
-            }
+            House similarHouse;
+            similarHouse.id = row["house_id"].as<int>();
+            similarHouse.address = row["house_address"].as<string>();
+            similarHouse.apartments = row["house_apartments"].as<int>();
+            similarHouse.totalArea = row["house_total_area"].as<double>();
+            similarHouse.buildYear = row["house_build_year"].as<int>();
+            similarHouse.floors = row["house_floors"].as<int>();
+            similarHouses.push_back(similarHouse);
         }
         
         return true;
     } catch (const exception& e) {
-        cerr << "Find similar houses error: " << e.what() << endl;
+        cerr << "Ошибка поиска похожих домов: " << e.what() << endl;
         return false;
     }
 }
 
-// === ПОЛЬЗОВАТЕЛИ ===
+// ПОЛЬЗОВАТЕЛИ 
+bool DatabaseManager::addUser(const User& user) {
+    if (!isConnected() || !user.isValid()) return false;
+    
+    try {
+        pqxx::work txn(*conn);
+        pqxx::result res = txn.exec_params(
+            "SELECT add_user($1, $2, $3)",
+            user.login, 
+            user.passwordHash, 
+            user.salt
+        );
+        
+        txn.commit();
+        
+        if (!res.empty()) {
+            int result = res[0][0].as<int>();
+            return result > 0;
+        }
+        return false;
+    } catch (const exception& e) {
+        cerr << "Ошибка добавления пользователя: " << e.what() << endl;
+        return false;
+    }
+}
+
+bool DatabaseManager::updateUserPassword(const string& login, const string& newHash, const string& newSalt) {
+    if (!isConnected() || login.empty() || newHash.empty() || newSalt.empty()) return false;
+    
+    try {
+        pqxx::work txn(*conn);
+        pqxx::result res = txn.exec_params(
+            "SELECT update_user_password($1, $2, $3)",
+            login,
+            newHash,
+            newSalt
+        );
+        
+        txn.commit();
+        return !res.empty() && res[0][0].as<bool>();
+    } catch (const exception& e) {
+        cerr << "Ошибка обновления пароля: " << e.what() << endl;
+        return false;
+    }
+}
 
 User DatabaseManager::getUserByLogin(const string& login) {
     User user;
@@ -306,18 +382,38 @@ User DatabaseManager::getUserByLogin(const string& login) {
     
     try {
         pqxx::nontransaction ntx(*conn);
-        string sql = "SELECT id, login, password_hash, salt, "
-                     "EXTRACT(EPOCH FROM created_at) "
-                     "FROM users WHERE login = $1";
-        pqxx::result res = ntx.exec_params(sql, login);
+        pqxx::result res = ntx.exec_params(
+            "SELECT * FROM get_user_by_login($1)",
+            login
+        );
         
         if (!res.empty()) {
-            user = rowToUser(res[0]);
+            user.id = res[0]["user_id"].as<int>();
+            user.login = res[0]["user_login"].as<string>();
+            user.passwordHash = res[0]["user_password_hash"].as<string>();
+            user.salt = res[0]["user_salt"].as<string>();
         }
     } catch (const exception& e) {
-        cerr << "Get user error: " << e.what() << endl;
+        cerr << "Ошибка получения пользователя: " << e.what() << endl;
     }
     return user;
+}
+
+bool DatabaseManager::userExists(const string& login) {
+    if (!isConnected() || login.empty()) return false;
+    
+    try {
+        pqxx::nontransaction ntx(*conn);
+        pqxx::result res = ntx.exec_params(
+            "SELECT user_exists($1)",
+            login
+        );
+        
+        return !res.empty() && res[0][0].as<bool>();
+    } catch (const exception& e) {
+        cerr << "Ошибка проверки существования пользователя: " << e.what() << endl;
+        return false;
+    }
 }
 
 bool DatabaseManager::authenticateUser(const string& login, const string& passwordHash) {
@@ -325,101 +421,20 @@ bool DatabaseManager::authenticateUser(const string& login, const string& passwo
     
     try {
         pqxx::nontransaction ntx(*conn);
-        string sql = "SELECT COUNT(*) FROM users WHERE login = $1 AND password_hash = $2";
-        pqxx::result res = ntx.exec_params(sql, login, passwordHash);
+        pqxx::result res = ntx.exec_params(
+            "SELECT authenticate_user($1, $2)",
+            login, 
+            passwordHash
+        );
         
-        return !res.empty() && res[0][0].as<int>() > 0;
+        return !res.empty() && res[0]["is_authenticated"].as<bool>();
     } catch (const exception& e) {
-        cerr << "Auth error: " << e.what() << endl;
+        cerr << "Ошибка аутентификации: " << e.what() << endl;
         return false;
     }
 }
 
-bool DatabaseManager::addUser(const User& user) {
-    if (!isConnected() || !user.isValid()) return false;
-    
-    try {
-        pqxx::work txn(*conn);
-        
-        // Проверяем существование пользователя
-        string checkSql = "SELECT COUNT(*) FROM users WHERE login = $1";
-        pqxx::result checkRes = txn.exec_params(checkSql, user.login);
-        
-        if (!checkRes.empty() && checkRes[0][0].as<int>() > 0) {
-            cerr << "Пользователь уже существует: " << user.login << endl;
-            return false;
-        }
-        
-        // Вставляем нового пользователя
-        string sql = "INSERT INTO users (login, password_hash, salt) "
-                     "VALUES ($1, $2, $3)";
-        txn.exec_params(sql, user.login, user.passwordHash, user.salt);
-        txn.commit();
-        
-        cout << "Пользователь создан: " << user.login << endl;
-        return true;
-        
-    } catch (const exception& e) {
-        cerr << "Ошибка создания пользователя: " << e.what() << endl;
-        return false;
-    }
-}
-
-// === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-
-House DatabaseManager::rowToHouse(const pqxx::row& row) {
-    House house;
-    house.id = row[0].as<int>();
-    house.address = row[1].as<string>();
-    house.apartments = row[2].as<int>();
-    house.totalArea = row[3].as<double>();
-    house.buildYear = row[4].as<int>();
-    house.floors = row[5].as<int>();
-    house.createdAt = static_cast<time_t>(row[6].as<double>());
-    return house;
-}
-
-User DatabaseManager::rowToUser(const pqxx::row& row) {
-    User user;
-    user.id = row[0].as<int>();
-    user.login = row[1].as<string>();
-    user.passwordHash = row[2].as<string>();
-    user.salt = row[3].as<string>();
-    user.createdAt = static_cast<time_t>(row[4].as<double>());
-    return user;
-}
-
-string DatabaseManager::normalizeAddress(const string& address) {
-    string normalized = address;
-    
-    // Приводим к нижнему регистру
-    transform(normalized.begin(), normalized.end(), normalized.begin(), ::tolower);
-    
-    // Удаляем лишние пробелы
-    regex multipleSpaces("\\s+");
-    normalized = regex_replace(normalized, multipleSpaces, " ");
-    
-    // Удаляем начальные и конечные пробелы
-    normalized.erase(0, normalized.find_first_not_of(" "));
-    normalized.erase(normalized.find_last_not_of(" ") + 1);
-    
-    // Заменяем сокращения
-    regex streetRegex("\\bул\\.|улица\\b");
-    normalized = regex_replace(normalized, streetRegex, "ул");
-    
-    regex avenueRegex("\\bпр\\.|проспект\\b|пр-т\\b");
-    normalized = regex_replace(normalized, avenueRegex, "пр");
-    
-    regex buildingRegex("\\bд\\.|дом\\b");
-    normalized = regex_replace(normalized, buildingRegex, "д");
-    
-    // Удаляем запятые и точки
-    regex punctuation("[.,]");
-    normalized = regex_replace(normalized, punctuation, "");
-    
-    return normalized;
-}
-
+// ЭКСПОРТ 
 bool DatabaseManager::exportToFile(const string& filename, 
                                   const vector<string>& fields,
                                   const string& delimiter,
@@ -463,65 +478,65 @@ bool DatabaseManager::exportToFile(const string& filename,
     return true;
 }
 
+// СТАТИСТИКА
 int DatabaseManager::getHouseCount() {
     if (!isConnected()) return 0;
     
     try {
         pqxx::nontransaction ntx(*conn);
-        pqxx::result res = ntx.exec("SELECT COUNT(*) FROM houses");
+        pqxx::result res = ntx.exec("SELECT get_house_count()");
         return res[0][0].as<int>();
     } catch (...) {
         return 0;
     }
 }
 
-bool DatabaseManager::userExists(const string& username) {
-    if (!isConnected() || username.empty()) return false;
+int DatabaseManager::getUserCount() {
+    if (!isConnected()) return 0;
     
     try {
         pqxx::nontransaction ntx(*conn);
-        string sql = "SELECT COUNT(*) FROM users WHERE login = $1";
-        pqxx::result res = ntx.exec_params(sql, username);
-        return !res.empty() && res[0][0].as<int>() > 0;
-    } catch (const exception& e) {
-        cerr << "User exists check error: " << e.what() << endl;
-        return false;
+        pqxx::result res = ntx.exec("SELECT get_user_count()");
+        return res[0][0].as<int>();
+    } catch (...) {
+        return 0;
     }
 }
 
-vector<House> DatabaseManager::searchHouses(const string& query) {
-    vector<House> houses;
-    if (!isConnected() || query.empty()) return houses;
-    
-    try {
-        pqxx::nontransaction ntx(*conn);
-        string sql = "SELECT id, address, apartments, total_area, build_year, floors, "
-                     "EXTRACT(EPOCH FROM created_at) "
-                     "FROM houses WHERE address ILIKE $1 "
-                     "ORDER BY address";
-        string likeQuery = "%" + query + "%";
-        pqxx::result res = ntx.exec_params(sql, likeQuery);
-
-        for (const auto& row : res) {
-            houses.push_back(rowToHouse(row));
-        }
-    } catch (const exception& e) {
-        cerr << "Search houses error: " << e.what() << endl;
+// ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ 
+House DatabaseManager::rowToHouse(const pqxx::row& row) {
+    House house;
+    house.id = row[0].as<int>();
+    house.address = row[1].as<string>();
+    house.apartments = row[2].as<int>();
+    house.totalArea = row[3].as<double>();
+    house.buildYear = row[4].as<int>();
+    house.floors = row[5].as<int>();
+    if (row.size() > 6) {
+        house.createdAt = static_cast<time_t>(row[6].as<double>());
     }
-    return houses;
+    return house;
 }
 
-bool DatabaseManager::deleteHouse(int id) {
-    if (!isConnected() || id <= 0) return false;
-    
-    try {
-        pqxx::work txn(*conn);
-        string sql = "DELETE FROM houses WHERE id = $1";
-        txn.exec_params(sql, id);
-        txn.commit();
-        return true;
-    } catch (const exception& e) {
-        cerr << "Delete house error: " << e.what() << endl;
-        return false;
+House DatabaseManager::rowToHouseFromProcedure(const pqxx::row& row) {
+    House house;
+    house.id = row["house_id"].as<int>();
+    house.address = row["house_address"].as<string>();
+    house.apartments = row["house_apartments"].as<int>();
+    house.totalArea = row["house_total_area"].as<double>();
+    house.buildYear = row["house_build_year"].as<int>();
+    house.floors = row["house_floors"].as<int>();
+    return house;
+}
+
+User DatabaseManager::rowToUser(const pqxx::row& row) {
+    User user;
+    user.id = row[0].as<int>();
+    user.login = row[1].as<string>();
+    user.passwordHash = row[2].as<string>();
+    user.salt = row[3].as<string>();
+    if (row.size() > 4) {
+        user.createdAt = static_cast<time_t>(row[4].as<double>());
     }
+    return user;
 }

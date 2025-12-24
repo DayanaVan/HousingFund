@@ -43,4 +43,4 @@ private:
     bool checkForDuplicates() const;
 };
 
-#endif // ADDEDITDIALOG_H
+#endif

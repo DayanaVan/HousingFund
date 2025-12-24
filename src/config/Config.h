@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <iostream>
 
+using namespace std;
+
 class Config {
 public:
     static constexpr int MAX_LOGIN_LENGTH = 50;
@@ -12,30 +14,26 @@ public:
     static constexpr int MAX_PASSWORD_LENGTH = 50;
     static constexpr int MIN_LOGIN_LENGTH = 3;
     
-    static std::string getConnectionString() {
+    static string getConnectionString() {
         // Получаем переменные окружения
-        const char* host = std::getenv("DB_HOST");
-        const char* port = std::getenv("DB_PORT");
-        const char* dbname = std::getenv("DB_NAME");
-        const char* user = std::getenv("DB_USER");
-        const char* password = std::getenv("DB_PASSWORD");
+        const char* host = getenv("DB_HOST");
+        const char* port = getenv("DB_PORT");
+        const char* dbname = getenv("DB_NAME");
+        const char* user = getenv("DB_USER");
+        const char* password = getenv("DB_PASSWORD");
         
         // Если переменные окружения установлены, используем их
         if (host && port && dbname && user && password) {
-            std::string connStr = "host=" + std::string(host) +
-                                  " port=" + std::string(port) +
-                                  " dbname=" + std::string(dbname) +
-                                  " user=" + std::string(user) +
-                                  " password=" + std::string(password);
-            std::cout << "Using environment variables for DB connection" << std::endl;
+            string connStr = "host=" + string(host) +
+                                  " port=" + string(port) +
+                                  " dbname=" + string(dbname) +
+                                  " user=" + string(user) +
+                                  " password=" + string(password);
             return connStr;
         }
-        
-        // Иначе используем значения по умолчанию
-        std::cout << "Using default DB connection settings" << std::endl;
         return "host=localhost port=5432 dbname=housing_fund "
                "user=housing_user password=secure_password";
     }
 };
 
-#endif // CONFIG_H
+#endif

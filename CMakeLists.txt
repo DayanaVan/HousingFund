@@ -7,16 +7,12 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-# Поиск Qt6
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 find_package(PostgreSQL REQUIRED)
 
-# Исходные файлы
 set(SOURCES
     src/main.cpp
     src/database/DatabaseManager.cpp
-    src/models/House.cpp
-    src/models/User.cpp
     src/ui/MainWindow.cpp
     src/ui/AuthDialog.cpp
     src/ui/AddEditDialog.cpp
@@ -24,7 +20,6 @@ set(SOURCES
     src/utils/HashUtils.cpp
 )
 
-# Заголовочные файлы
 set(HEADERS
     src/database/DatabaseManager.h
     src/models/House.h
@@ -37,20 +32,17 @@ set(HEADERS
     src/config/Config.h
 )
 
-# UI файлы
 set(UI_FILES
     src/ui/MainWindow.ui
     src/ui/AuthDialog.ui
 )
 
-# Создание исполняемого файла
 add_executable(HousingFund
     ${SOURCES} 
     ${HEADERS}
     ${UI_FILES}
 )
 
-# Подключение Qt
 target_link_libraries(HousingFund
     Qt6::Core
     Qt6::Widgets
@@ -61,11 +53,10 @@ target_link_libraries(HousingFund
     pthread
 )
 
-# Пути к заголовкам
+
 target_include_directories(HousingFund PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${PostgreSQL_INCLUDE_DIRS}
 )
 
-# Установка
 install(TARGETS HousingFund DESTINATION bin)

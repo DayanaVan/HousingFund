@@ -52,14 +52,11 @@ private slots:
     void onAddHouse();
     void onEditHouse();
     void onDeleteHouses();
-    void onSearch();
     void onExport();
     void onFilter();
     void onClearFilters();
     void onRefresh();
-    void onAbout();
     void onExit();
-    
     void updateStatusBar();
     void onHouseSelected(int row, int column);
 
@@ -67,10 +64,8 @@ private:
     Ui::MainWindow* ui;
     DatabaseManager* dbManager;
     
-    // Фильтры
     FilterSettings currentFilters;
     
-    // Сортировка
     struct SortColumn {
         int column;
         bool ascending;
@@ -90,7 +85,6 @@ private:
     void showError(const QString& message);
     void showInfo(const QString& message);
     
-    // Вспомогательные методы
     bool matchesFilters(const House& house) const;
     bool compareHouses(const House& a, const House& b) const;
 };

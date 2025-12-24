@@ -32,8 +32,7 @@ void ExportDialog::setupUI() {
     fileLayout->addWidget(filePathEdit);
     fileLayout->addWidget(browseButton);
     fileGroup->setLayout(fileLayout);
-    
-    // Выбор полей
+
     QGroupBox* fieldsGroup = new QGroupBox("Выберите поля для экспорта", this);
     QGridLayout* fieldsLayout = new QGridLayout(fieldsGroup);
     
@@ -64,7 +63,6 @@ void ExportDialog::setupUI() {
     
     fieldsGroup->setLayout(fieldsLayout);
     
-    // Разделитель
     QGroupBox* delimiterGroupBox = new QGroupBox("Разделитель для TXT файла", this);
     QHBoxLayout* delimiterLayout = new QHBoxLayout(delimiterGroupBox);
     
@@ -82,8 +80,7 @@ void ExportDialog::setupUI() {
     delimiterLayout->addWidget(semicolonRadio);
     delimiterLayout->addWidget(commaRadio);
     delimiterGroupBox->setLayout(delimiterLayout);
-    
-    // Информация о формате
+
     QLabel* formatInfo = new QLabel(
         "Формат экспорта: Текстовый файл (.txt)\n"
         "Все данные экспортируются в формате TXT с выбранным разделителем",
@@ -104,8 +101,7 @@ void ExportDialog::setupUI() {
     buttonLayout->addStretch();
     buttonLayout->addWidget(exportButton);
     buttonLayout->addWidget(cancelButton);
-    
-    // Собираем layout
+  
     mainLayout->addWidget(fileGroup);
     mainLayout->addWidget(fieldsGroup);
     mainLayout->addWidget(delimiterGroupBox);
@@ -132,7 +128,6 @@ void ExportDialog::onBrowseClicked() {
     );
     
     if (!fileName.isEmpty()) {
-        // Добавляем расширение .txt если его нет и пользователь не выбрал другое
         if (!fileName.contains('.')) {
             fileName += ".txt";
         }

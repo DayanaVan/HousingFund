@@ -5,12 +5,14 @@
 #include <string>
 #include <ctime>
 
+using namespace std;
+
 struct User {
     int id;
-    std::string login;
-    std::string passwordHash;
-    std::string salt;
-    std::time_t createdAt;
+    string login;
+    string passwordHash;
+    string salt;
+    time_t createdAt;
     
     User() : id(0), createdAt(0) {}
     
@@ -21,7 +23,7 @@ struct User {
                login.length() <= Config::MAX_LOGIN_LENGTH;
     }
     
-    bool isPasswordValid(const std::string& password) const {
+    bool isPasswordValid(const string& password) const {
         return !password.empty() && 
                password.length() >= Config::MIN_PASSWORD_LENGTH &&
                password.length() <= Config::MAX_PASSWORD_LENGTH;

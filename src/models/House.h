@@ -3,7 +3,7 @@
 
 #include <string>
 #include <ctime>
-#include <cmath>   // для C++
+#include <cmath>   
 
 using namespace std;
 

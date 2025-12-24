@@ -34,39 +34,33 @@ AddEditDialog::~AddEditDialog() {}
 void AddEditDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    // Адрес
     QLabel* addressLabel = new QLabel("Адрес дома:", this);
     addressEdit = new QLineEdit(this);
     addressEdit->setPlaceholderText("ул. Примерная, д. 10");
     addressEdit->setMaxLength(200);
     
-    // Количество квартир
     QLabel* apartmentsLabel = new QLabel("Количество квартир:", this);
     apartmentsSpin = new QSpinBox(this);
     apartmentsSpin->setRange(1, 1000);
     apartmentsSpin->setValue(24);
     
-    // Площадь
     QLabel* areaLabel = new QLabel("Общая площадь (кв.м):", this);
     areaSpin = new QDoubleSpinBox(this);
     areaSpin->setRange(1.0, 100000.0);
     areaSpin->setDecimals(2);
     areaSpin->setValue(1000.0);
     
-    // Год постройки
     QLabel* yearLabel = new QLabel("Год постройки:", this);
     yearSpin = new QSpinBox(this);
     int currentYear = QDate::currentDate().year();
     yearSpin->setRange(1500, currentYear);
     yearSpin->setValue(2000);
-    
-    // Этажность
+
     QLabel* floorsLabel = new QLabel("Этажность:", this);
     floorsSpin = new QSpinBox(this);
     floorsSpin->setRange(1, 100);
     floorsSpin->setValue(5);
     
-    // Кнопки
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     QPushButton* saveButton = new QPushButton("Сохранить", this);
     QPushButton* cancelButton = new QPushButton("Отмена", this);
@@ -74,7 +68,6 @@ void AddEditDialog::setupUI() {
     buttonLayout->addWidget(saveButton);
     buttonLayout->addWidget(cancelButton);
     
-    // Собираем layout
     mainLayout->addWidget(addressLabel);
     mainLayout->addWidget(addressEdit);
     mainLayout->addWidget(apartmentsLabel);
@@ -103,8 +96,7 @@ void AddEditDialog::onSaveClicked() {
     if (!validateData()) {
         return;
     }
-    
-    // Проверка на дубликаты
+
     if (!checkForDuplicates()) {
         return;
     }
@@ -196,7 +188,7 @@ bool AddEditDialog::checkForDuplicates() const {
     tempHouse.buildYear = yearSpin->value();
     tempHouse.floors = floorsSpin->value();
     
-    // 1. Проверка точного совпадения адреса
+    // Проверка точного совпадения адреса
     bool exactDuplicateExists;
     if (isEditingMode) {
         exactDuplicateExists = dbManager->houseExistsWithDifferentId(tempHouse);
@@ -213,7 +205,7 @@ bool AddEditDialog::checkForDuplicates() const {
         return false;
     }
     
-    // 2. Проверка похожих домов (расширенная проверка)
+    // Проверка похожих домов
     vector<House> similarHouses;
     if (dbManager->findSimilarHouses(tempHouse, similarHouses, 0.7)) {
         if (!similarHouses.empty()) {

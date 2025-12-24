@@ -4,6 +4,8 @@
 #include <QDialog>
 #include "../database/DatabaseManager.h"
 
+using namespace std;
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class AuthDialog;
@@ -16,7 +18,7 @@ class AuthDialog : public QDialog {
 public:
     explicit AuthDialog(DatabaseManager* dbManager, QWidget* parent = nullptr);
     ~AuthDialog();
-    std::string getCurrentUserLogin() const;
+    string getCurrentUserLogin() const;
     bool isAdmin() const;
 
 private slots:
@@ -30,8 +32,8 @@ private:
 
     Ui::AuthDialog* ui;
     DatabaseManager* dbManager;
-    std::string currentUserLogin;
+    string currentUserLogin;
     bool userIsAdmin;
 };
 
-#endif // AUTHDIALOG_H
+#endif 

@@ -11,38 +11,39 @@
 #include <QString>
 #include <QChar>
 
+using namespace std;
+
 const std::string HashUtils::VALID_CHARS = 
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789"
     "!@#$%^&*()-_=+[]{}|;:,.<>?";
 
-std::string HashUtils::generateSalt(size_t length) {
+string HashUtils::generateSalt(size_t length) {
     if (length < 8) length = 8;
     
     unsigned char* buffer = new unsigned char[length];
     
-    // Используем криптографически безопасный генератор
     if (RAND_bytes(buffer, length) != 1) {
         delete[] buffer;
-        throw std::runtime_error("Не удалось сгенерировать случайную соль");
+        throw runtime_error("Не удалось сгенерировать случайную соль");
     }
     
-    std::stringstream ss;
+    stringstream ss;
     for (size_t i = 0; i < length; i++) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(buffer[i]);
+        ss << hex << setw(2) << setfill('0') << static_cast<int>(buffer[i]);
     }
     
     delete[] buffer;
     return ss.str();
 }
 
-std::string HashUtils::hashPassword(const std::string& password, const std::string& salt) {
+string HashUtils::hashPassword(const string& password, const string& salt) {
     if (password.empty() || salt.empty()) {
         throw std::invalid_argument("Пароль и соль не могут быть пустыми");
     }
     
-    std::string data = password + salt;
+    string data = password + salt;
     
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
@@ -52,22 +53,21 @@ std::string HashUtils::hashPassword(const std::string& password, const std::stri
     SHA256_Final(hash, &sha256);
     
     // Конвертируем в hex-строку
-    std::stringstream ss;
+    stringstream ss;
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+        ss << hex << setw(2) << setfill('0') << static_cast<int>(hash[i]);
     }
     
     return ss.str();
 }
 
-bool HashUtils::verifyPassword(const std::string& password, const std::string& hash, const std::string& salt) {
+bool HashUtils::verifyPassword(const string& password, const string& hash, const std::string& salt) {
     if (password.empty() || hash.empty() || salt.empty()) {
         return false;
     }
     
-    std::string calculatedHash = hashPassword(password, salt);
+    string calculatedHash = hashPassword(password, salt);
     
-    // Сравнение хешей с постоянным временем (timing attack protection)
     if (calculatedHash.length() != hash.length()) {
         return false;
     }
@@ -80,17 +80,16 @@ bool HashUtils::verifyPassword(const std::string& password, const std::string& h
     return result == 0;
 }
 
-std::string HashUtils::generateRandomPassword(size_t length) {
+string HashUtils::generateRandomPassword(size_t length) {
     if (length < 8) length = 8;
     
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::uniform_int_distribution<> distribution(0, VALID_CHARS.size() - 1);
+    random_device rd;
+    mt19937 generator(rd());
+    uniform_int_distribution<> distribution(0, VALID_CHARS.size() - 1);
     
-    std::string password;
+    string password;
     password.reserve(length);
     
-    // Гарантируем наличие разных типов символов
     password += static_cast<char>(distribution(generator) % 26 + 'A'); 
     password += static_cast<char>(distribution(generator) % 26 + 'a');  
     password += static_cast<char>(distribution(generator) % 10 + '0'); 
@@ -102,12 +101,12 @@ std::string HashUtils::generateRandomPassword(size_t length) {
     }
     
     // Перемешиваем
-    std::shuffle(password.begin(), password.end(), generator);
+    shuffle(password.begin(), password.end(), generator);
     
     return password;
 }
 
-bool HashUtils::isPasswordStrong(const std::string& password) {
+bool HashUtils::isPasswordStrong(const string& password) {
     if (password.length() < 8) {
         return false;
     }
@@ -117,11 +116,9 @@ bool HashUtils::isPasswordStrong(const std::string& password) {
     bool hasDigit = false;
     bool hasSpecial = false;
     
-    // Преобразуем в QString для удобства работы с Unicode
     QString qPassword = QString::fromStdString(password);
     
     for (QChar c : qPassword) {
-        // Получаем Unicode код символа
         ushort unicode = c.unicode();
         
         // Проверка на русские заглавные буквы 

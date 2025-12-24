@@ -13,7 +13,7 @@
 
 using namespace std;
 
-const std::string HashUtils::VALID_CHARS = 
+const string HashUtils::VALID_CHARS = 
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789"
@@ -147,7 +147,6 @@ bool HashUtils::isPasswordStrong(const string& password) {
                 hasSpecial = true;
             }
         }
-    }
-    
+    }  
     return hasUpper && hasLower && hasDigit && hasSpecial;
 }
